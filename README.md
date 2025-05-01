@@ -1,6 +1,6 @@
 # ktor-sample-type-safe-authentication
 
-This projects illustrates the problem, described in StackOverflow question:
+This projects illustrates the problem, described in StackOverflow question: https://stackoverflow.com/questions/79601768/ktor-principal-resolution-fails-when-encapsulating-authenticate-in-a-custom-rou
 
 ## See the code: 
 
@@ -75,3 +75,8 @@ I suspect the `Route.()` vs. `AuthTypeSafeScope.()` scope handling breaks Ktorâ€
 
 1. Why does it work in **(Step)** 2 if the scopes are "wrong"?
 2. How can I **properly encapsulate** this while preserving principal resolution?
+
+----
+I've tried to build just a simple custom Kotlin-builder DSL, where I manipulated by scopes like here ^^^, and I didn't experience any errors:
+- all defined functions (methods) which are in the scope of any apper level - accessible and works good.
+
