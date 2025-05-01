@@ -37,19 +37,21 @@ fun Application.module() {
             call.respondText("Hello World!")
         }
 
+        // works fine.
         authenticate("user-header") {
             CustomAuthScope().apply {
                 get("/private") {
-                    val userName = call.authenticatedUser().name
-                    call.respondText("Hello $userName!")
+                    val user = call.authenticatedUser()
+                    call.respondText("Hello ${user.name}!")
                 }
             }
         }
 
-        requiredAuth {
+        // doesn't work :-( - the `principal<UserIdPrincipal>()` always returns `null`
+        requiredAuth { // <- builds principal of a certain type
             get("/private-2") {
-                val userName = call.authenticatedUser().name
-                call.respondText("Hello to $userName from private-2!")
+                val user = call.authenticatedUser()  // <- returns the principal of the certain type
+                call.respondText("Hello ${user.name}!")
             }
         }
 

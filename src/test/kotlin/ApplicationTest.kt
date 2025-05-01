@@ -9,7 +9,7 @@ import kotlin.test.assertEquals
 
 class ApplicationTest {
 
-    @Test fun tsstRoutes() = testApplication {
+    @Test fun testRoutes() = testApplication {
         application {
             module()
         }
@@ -17,9 +17,10 @@ class ApplicationTest {
         client.get("/").apply {
             println(
                 """
-                    ////////////////////////////////////////////////////////////////////////////////////
-                    get / << ${bodyAsText()} 
-                """.trimIndent()
+                    |////////////////////////////////////////////////////////////////////////////////////
+                    |get / << ${bodyAsText()} 
+                    |
+                """.trimMargin()
             )
             assertEquals(HttpStatusCode.OK, status)
         }
@@ -29,9 +30,10 @@ class ApplicationTest {
         }.apply {
             println(
                 """
-                    ////////////////////////////////////////////////////////////////////////////////////
-                    get /private{user=Test User} << ${bodyAsText()} 
-                """.trimIndent()
+                    |////////////////////////////////////////////////////////////////////////////////////
+                    |get /private{user=Test User} << ${bodyAsText()} 
+                    |
+                """.trimMargin()
             )
             assertEquals(HttpStatusCode.OK, status)
         }
@@ -41,9 +43,10 @@ class ApplicationTest {
         }.apply {
             println(
                 """
-                    ////////////////////////////////////////////////////////////////////////////////////
-                    get /private-2{user=Test User} << ${bodyAsText()} 
-                """.trimIndent()
+                    |////////////////////////////////////////////////////////////////////////////////////
+                    |get /private-2{user=Test User} << ${bodyAsText()} 
+                    |
+                """.trimMargin()
             )
             assertEquals(HttpStatusCode.OK, status)
         }
