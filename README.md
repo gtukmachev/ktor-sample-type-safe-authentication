@@ -80,3 +80,65 @@ I suspect the `Route.()` vs. `AuthTypeSafeScope.()` scope handling breaks Ktor�
 I've tried to build just a simple custom Kotlin-builder DSL, where I manipulated by scopes like here ^^^, and I didn't experience any errors:
 - all defined functions (methods) which are in the scope of any apper level - accessible and works good.
 
+---
+
+# Solution: Fixing Principal Resolution in Ktor Route Extensions
+The key issue is that get("/secure") inside requiredAuth uses the wrong this scope. It's actually calling:
+```kotlin
+routing {
+    requiredAuth {
+        this@routing.get("/secure") { ... } // Uses parent route instead of auth scope
+    }
+}
+```
+This makes the route register outside the authenticate block, breaking the authentication context.
+
+## The Solution
+`AuthTypeSafeScope` must implement Ktor’s `Route` interface to ensure routes are registered in the correct scope.
+
+After identifying the issue (incorrect this scope handling), I implemented this solution—though it’s slightly hacky since it involves embedding a new Route class, which isn’t very idiomatic in current Ktor versions:
+```kotlin
+class CustomAuthRoute(parent: RoutingNode?, selector: RouteSelector, developmentMode: Boolean = false, environment: ApplicationEnvironment) : RoutingNode(parent, selector, developmentMode, environment) {
+    fun ApplicationCall.authenticatedUser() = principal<UserIdPrincipal>() ?: throw Exception("User is not authenticated")
+}
+
+@KtorDsl
+fun Route.requiredAuth(build: CustomAuthRoute.() -> Unit) =
+    authenticate("user-header") {
+        // hack #1: the code if a child creating is copyPasted from the `RoutingNode.createChild()` method.
+        val childrenNodesMutableList = (this as RoutingNode).children as MutableList<RoutingNode>
+        val newSelector: RouteSelector = CustomAuthRouteSelector()
+
+        val existingRoute = childrenNodesMutableList.firstOrNull { it.selector == newSelector }
+        val customAuthRoute = if (existingRoute == null) {
+            // not sure if the `if` required in our case..
+            // it looks like the existingRoute is always null
+            // (newSelector is just a newly created object, and the `==` is just the references comparing in this case)
+            val newRoute = CustomAuthRoute(this, selector, developmentMode, environment)
+            childrenNodesMutableList.add(newRoute)
+            newRoute
+        } else {
+            existingRoute
+        }
+
+        @Suppress("UNCHECKED_CAST")
+        customAuthRoute.apply(build as (Route.() -> Unit) ) // <- the cast is hack #2 :-)
+    }
+
+class CustomAuthRouteSelector : RouteSelector() {
+    override suspend fun evaluate(context: RoutingResolveContext, segmentIndex: Int) = RouteSelectorEvaluation.Transparent
+    override fun toString() = "CustomAuthRouteSelector()"
+}
+```
+
+And now the routers work as expected:
+```kotlin
+    routing {
+        requiredAuth { // <- builds principal of a certain type
+            get("/private") {
+                val user = call.authenticatedUser()  // <- returns the principal of the certain type
+                call.respondText("Hello ${user.name}!")
+            }
+        }
+    }
+```

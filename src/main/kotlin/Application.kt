@@ -11,7 +11,6 @@ fun main(args: Array<String>) {
 }
 
 class CustomAuthRoute(parent: RoutingNode?, selector: RouteSelector, developmentMode: Boolean = false, environment: ApplicationEnvironment) : RoutingNode(parent, selector, developmentMode, environment) {
-
     fun ApplicationCall.authenticatedUser() = principal<UserIdPrincipal>() ?: throw Exception("User is not authenticated")
 }
 
